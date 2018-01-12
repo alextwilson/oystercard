@@ -1,12 +1,14 @@
 require 'oystercard'
 
 describe Oystercard do
-  let(:journey) { double :journey, touch_in: :station, touch_out: :station, fare: 1 }
-  let(:journey_class) { double :journey_class, new: journey, MINIMUM_FARE: 1}
+  let(:journey) { double :journey, touch_in: entry0, touch_out: exit0, fare: 1, exit_station: nil }
+  let(:journey_class) { double :journey_class, new: journey, minimum_fare: 1 }
   subject :card  { described_class.new(journey_class) }
-  let(:station0) { double :station }
-  let(:station1) { double :station }
-  let(:fare) {double :MINIMUM_FARE}
+  let(:entry0) { double :entry_station }
+  let(:exit0) { double :exit_station }
+  let(:entry1) { double :entry_station }
+  let(:exit1) { double :exit_station }
+
   it "balance should be zero" do
     expect(card.balance).to eq 0
   end
@@ -36,21 +38,23 @@ describe Oystercard do
 
   describe '#touch_in' do
 
-    it "raises an error if balance is below 1" do
+    it 'raises an error if balance is below 1' do
       error = 'Insufficient balance'
-      expect { card.touch_in(station0)} .to raise_error error
+      expect { card.touch_in(entry0)} .to raise_error error
     end
 
-    context 'card ready to use' do
+    it 'creates new journey if there is an existing open journey' do
+      card.top_up(20)
+      card.touch_in(entry0)
+      card.touch_in(entry1)
+      expect(card.journeys).to eq [journey, journey]
+    end
 
-      before do
-        card.top_up(10)
-      end
-
-      it 'changes oystercard journey status to true' do
-        expect { card.touch_in(station0)} .to change { card.in_journey? } .to true
-      end
-
+    it 'charges penalty fare if there is an existing open journey' do
+      allow(journey).to receive(:fare).and_return 6
+      card.top_up(20)
+      card.touch_in(entry0)
+      expect { card.touch_in(entry1) } .to change { card.balance }.by -6
     end
 
   end
@@ -59,20 +63,12 @@ describe Oystercard do
 
     before do
       card.top_up(10)
-      card.touch_in(station0)
-    end
-
-    it 'changes oystercard journey status to false' do
-      expect { card.touch_out(station1) } .to change { card.in_journey? } .to false
+      card.touch_in(entry0)
     end
 
     it "reduces balance by 1" do
       charge = -1
-      expect { card.touch_out(station1) } .to change { card.balance } .by charge
-    end
-
-    it "sets entry station to nil on touch out" do
-      expect { card.touch_out(station1) } .to change { card.in_journey? } .to be false
+      expect { card.touch_out(exit1) } .to change { card.balance } .by charge
     end
 
   end

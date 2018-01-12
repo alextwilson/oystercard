@@ -30,4 +30,8 @@ class Journey
     @exit_station.nil? || @entry_station.nil?
   end
 
+  def self.minimum_fare
+    MINIMUM_FARE
+  end
+
 end

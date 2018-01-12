@@ -19,6 +19,9 @@ class Oystercard
 
   def touch_in(station)
     raise 'Insufficient balance' if balance_too_low
+    if @journeys.length >= 1 and @journeys[-1].exit_station == nil
+      deduct(@journeys[-1].fare)
+    end
     @current_journey = @journey_class.new(station)
     @journeys << @current_journey
   end
@@ -40,7 +43,7 @@ class Oystercard
   end
 
   def balance_too_low
-    @balance < @journey_class::MINIMUM_FARE
+    @balance < @journey_class.minimum_fare
   end
 
   def maximum_exceeded?(amount)
