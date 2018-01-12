@@ -22,10 +22,6 @@ class Journey
     MINIMUM_FARE
   end
 
-  def in_journey?
-    (!@entry_station.nil? and @exit_station.nil?) ? true : false
-  end
-
   def incomplete?
     @exit_station.nil? || @entry_station.nil?
   end

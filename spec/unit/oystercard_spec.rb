@@ -1,7 +1,8 @@
 require 'oystercard'
 
 describe Oystercard do
-  let(:journey) { double :journey, touch_in: entry0, touch_out: exit0, fare: 1, exit_station: nil }
+  let(:journey) { double :journey, touch_in: entry0, touch_out: exit0,
+     fare: 1, exit_station: nil, entry_station: entry0 }
   let(:journey_class) { double :journey_class, new: journey, minimum_fare: 1 }
   subject :card  { described_class.new(journey_class) }
   let(:entry0) { double :entry_station }
@@ -63,12 +64,30 @@ describe Oystercard do
 
     before do
       card.top_up(10)
-      card.touch_in(entry0)
     end
 
     it "reduces balance by 1" do
       charge = -1
+      card.touch_in(entry0)
       expect { card.touch_out(exit1) } .to change { card.balance } .by charge
+    end
+
+    it 'creates new journey if there is not an open journey' do
+      allow(journey).to receive(:entry_station).and_return nil
+      card.touch_out(exit0)
+      expect(card.journeys).to eq [journey]
+    end
+
+    it 'charges penalty fare if there have been no journeys' do
+      allow(journey).to receive(:fare).and_return 6
+      expect { card.touch_out(exit0) } .to change { card.balance }.by -6
+    end
+
+    it 'charges penalty fare if there is not an open journey' do
+      card.touch_in(entry0)
+      card.touch_out(exit0)
+      allow(journey).to receive(:fare).and_return 6
+      expect { card.touch_out(exit1) } .to change { card.balance }.by -6
     end
 
   end
